@@ -34,7 +34,7 @@ class Word2VecFeatureGenerator(FeatureGenerator):
         n_test = test.shape[0]
         print('Word2VecFeatureGenerator, n_test:',n_test)
 
-        model = gensim.models.KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True)
+        model = gensim.models.KeyedVectors.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
         print('Word2Vec model loaded.')
 
         def get_summed_vector(tokens):
