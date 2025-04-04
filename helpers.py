@@ -16,7 +16,7 @@ def stem_tokens(tokens, stemmer):
     return stemmed
 
 # test 
-#entence = "You're having a great day easily finished my homework!"  
+#Sentence = "You're having a great day easily finished my homework!" 
 # token_example = word_tokenize(sentence)
 # print(stem_tokens(token_example, english_stemmer))
 
@@ -25,6 +25,10 @@ def preprocess_data(line,
                     # the regex pattern used to split the text into words
                     exclude_stopword = True,
                     stem = True):
+    # if not isinstance(line, str):
+    #     return []
+
+
     token_pattern = re.compile(token_pattern, flags = re.UNICODE)
     #re.compile change the string pattern e.g.r"(?u)\b\w\w+\b" into serach tool 
     tokens = [x.lower() for x in token_pattern.findall(line)] 
@@ -37,9 +41,6 @@ def preprocess_data(line,
         tokens_stemmed = [x for x in tokens_stemmed if x not in stopwords] 
     
     return tokens_stemmed
-
-
-# print(preprocess_data(sentence))
 
 
 def try_divide(x, y, val = 0.0):
