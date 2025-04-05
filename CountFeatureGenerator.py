@@ -36,6 +36,7 @@ class CountFeatureGenerator(FeatureGenerator):
             df["ratio_of_keyword_%s_in_text" % gram] = \
                 list(map(try_divide, df["count_of_keyword_%s_in_text" % gram], df["count_of_keyword_%s" % gram]))
 
+        #finding how many setnences in text
         for feat_name in feat_names:
             df['len_sent_%s' % feat_name] = df[feat_name].apply(lambda x: len(sent_tokenize(x)))
 

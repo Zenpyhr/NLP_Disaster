@@ -23,6 +23,7 @@ class FeatureGenerator(object):
             read the feature matrix from a pickle file'
         '''
         
+        
 # TEST
 # w2v_generator = FeatureGenerator('w2v')
 # print(w2v_generator._name)
