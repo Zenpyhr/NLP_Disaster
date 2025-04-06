@@ -122,21 +122,21 @@ class TfidfFeatureGenerator(FeatureGenerator):
 
 
 
-# test
-df = pd.read_csv("Data/train.csv")
+# # test
+# df = pd.read_csv("Data/train.csv")
 
-# Filter out rows with missing keywords (optional for testing)
-df = df[df["keyword"].apply(lambda x: isinstance(x, str))].copy()
+# # Filter out rows with missing keywords (optional for testing)
+# df = df[df["keyword"].apply(lambda x: isinstance(x, str))].copy()
 
-# Add n-grams to match what your process function expects
-for col in ["text", "keyword"]:
-    df[f"{col}_unigram"] = df[col].map(lambda x: preprocess_data(x, exclude_stopword=False, stem=True))
-    df[f"{col}_bigram"] = df[f"{col}_unigram"].map(lambda tokens: list(zip(tokens, tokens[1:])))
-    df[f"{col}_trigram"] = df[f"{col}_unigram"].map(lambda tokens: list(zip(tokens, tokens[1:], tokens[2:])))
+# # Add n-grams to match what your process function expects
+# for col in ["text", "keyword"]:
+#     df[f"{col}_unigram"] = df[col].map(lambda x: preprocess_data(x, exclude_stopword=False, stem=True))
+#     df[f"{col}_bigram"] = df[f"{col}_unigram"].map(lambda tokens: list(zip(tokens, tokens[1:])))
+#     df[f"{col}_trigram"] = df[f"{col}_unigram"].map(lambda tokens: list(zip(tokens, tokens[1:], tokens[2:])))
 
-# Create and test the feature generator
-tfidf_gen = TfidfFeatureGenerator()
-tfidf_gen.process(df)
+# # Create and test the feature generator
+# tfidf_gen = TfidfFeatureGenerator()
+# tfidf_gen.process(df)
 
 # Read and inspect the result
 # features = tfidf_gen.read('train')
