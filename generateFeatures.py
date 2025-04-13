@@ -99,3 +99,9 @@ def process():
 
 if __name__ == "__main__":
     process()
+
+
+#sensitivity analysis 
+#XGboost 
+#not imbalanced -- rf
+#svn
