@@ -137,7 +137,7 @@ class Word2VecFeatureGenerator(FeatureGenerator):
         full_features = np.hstack([textVec, keywordVec, simVec])
         print(f"Combined features shape: {full_features.shape}")
 
-        return full_features
+        return [full_features]
 
 
 # #test

@@ -41,7 +41,7 @@ def generate_grams(data, print_grams=False):
 
 def process_data():
     full_data = pd.read_csv('./data/train.csv', encoding='utf-8')
-    used_columns = ['keyword', 'text', 'location', 'target']
+    used_columns = ['id', 'keyword', 'text', 'target']
     full_data = full_data[used_columns].dropna()   #Drop all NAs or keep the rows but write NA?
     print("Loaded data shape:", full_data.shape)
     return full_data

@@ -13,32 +13,41 @@ class SvdFeatureGenerator(FeatureGenerator):
         super().__init__(name)
 
     def process(self,df):
-        train = df.sample(frac = 0.8, random_state = 2025)
-        test = df.loc[~df.index.isin(train.index)]
-        n_train = train.shape[0]
-        print('tfids, n_train:', n_train)
-        n_test = test.shape[0]
-        print('tfidf, n_test:', n_test)
+        # train = df.sample(frac = 0.8, random_state = 2025)
+        # test = df.loc[~df.index.isin(train.index)]
+        # n_train = train.shape[0]
+        # print('tfids, n_train:', n_train)
+        # n_test = test.shape[0]
+        # print('tfidf, n_test:', n_test)
+
+
+
 
         tfidfGenerator = TfidfFeatureGenerator('tfidf')
-        print(tfidfGenerator)
         featuresTrain = tfidfGenerator.read('train')
+        featuresTest = tfidfGenerator.read('test')
 
-        print(f"this is what you looking {len(featuresTrain)}")
+        xKeywordTfidfTrain, xTextTfidfTrain, _ = featuresTrain
+        xKeywordTfidfTest, xTextTfidfTest, _ = featuresTest
 
-        xKeywordTfidfTrain, xTextTfidfTrain = featuresTrain[0], featuresTrain[1]
+        n_train = xKeywordTfidfTrain.shape[0]
+        n_test = xKeywordTfidfTest.shape[0]
+        print("n_train:", n_train)
+        print("n_test:", n_test)
 
-        xKeywordTfidf = xKeywordTfidfTrain
-        xTextTfidf = xTextTfidfTrain
-        if n_test > 0:
-            featuresTest = tfidfGenerator.read('test')
-            xKeywordTfidfTest, xTextTfidfTest = featuresTest[0], featuresTest[1]
-            xKeywordTfidf = vstack([xKeywordTfidfTrain, xKeywordTfidfTest])
-            xBodyTfidf = vstack([xTextTfidfTrain, xTextTfidfTest])
-            #stack two sparse matrices vertically
+
+
+
+        print("xKeywordTfidfTest.shape:", xKeywordTfidfTest.shape)
+        print("xTextTfidfTest.shape:", xTextTfidfTest.shape)
+
+
+        xKeywordTfidf = vstack([xKeywordTfidfTrain, xKeywordTfidfTest])
+        xTextTfidf = vstack([xTextTfidfTrain, xTextTfidfTest])
+        #stack two sparse matrices vertically
             
         svd = TruncatedSVD(n_components=50, n_iter=15)
-        xKTTfidf = vstack([xKeywordTfidf, xBodyTfidf])
+        xKTTfidf = vstack([xKeywordTfidf, xTextTfidf])
         svd.fit(xKTTfidf) #Trains the SVD model to find 50 best directions (components) capturing variance in the combined TF-IDF space.
         print('xKeywordTfidf.shape:')
         print(xKeywordTfidf.shape)
@@ -71,6 +80,12 @@ class SvdFeatureGenerator(FeatureGenerator):
             pickle.dump(xTextSvdTrain, outfile, -1)
         print('text svd features of training set saved in ' + str(outfilename_tsvd_train))
 
+        print("xTextSvd.shape (all):", xTextSvd.shape)
+        print("n_train:", n_train)
+        print("xTextSvdTest.shape (slice):", xTextSvd[n_train:, :].shape)
+
+
+
         if n_test > 0:
             # test set is available
             xTextSvdTest = xTextSvd[n_train:, :]
@@ -100,45 +115,29 @@ class SvdFeatureGenerator(FeatureGenerator):
         return 1
 
 
-def read(self, header='train'):
+    def read(self, header='train'):
 
-    filename_ksvd = "%s.keyword.svd.pkl" % header
-    with open(filename_ksvd, "rb") as infile:
-        xKeywordSvd = pickle.load(infile)
+        filename_ksvd = "%s.keyword.svd.pkl" % header
+        with open(filename_ksvd, "rb") as infile:
+            xKeywordSvd = pickle.load(infile)
 
-    filename_tsvd = "%s.text.svd.pkl" % header
-    with open(filename_tsvd, "rb") as infile:
-        xTextSvd = pickle.load(infile)
+        filename_tsvd = "%s.text.svd.pkl" % header
+        with open(filename_tsvd, "rb") as infile:
+            xTextSvd = pickle.load(infile)
 
-    filename_simsvd = "%s.sim.svd.pkl" % header
-    with open(filename_simsvd, "rb") as infile:
-        simSvd = pickle.load(infile)
+        filename_simsvd = "%s.sim.svd.pkl" % header
+        with open(filename_simsvd, "rb") as infile:
+            simSvd = pickle.load(infile)
 
-    print('xKeywordSvd.shape:')
-    print(xKeywordSvd.shape)
-    print('xTextSvd.shape:')
-    print(xTextSvd.shape)
-    print('simSvd.shape:')
-    print(simSvd.shape)
+        print('xKeywordSvd.shape:')
+        print(xKeywordSvd.shape)
+        print('xTextSvd.shape:')
+        print(xTextSvd.shape)
+        print('simSvd.shape:')
+        print(simSvd.shape)
 
-    return [xKeywordSvd, xTextSvd, simSvd.reshape(-1, 1)]
+        return [xKeywordSvd, xTextSvd, simSvd.reshape(-1, 1)]
 
-# df = pd.read_csv("Data/train.csv")
-# df = df[df["keyword"].apply(lambda x: isinstance(x, str))].copy()
-
-# def generate_ngrams(tokens, n):
-#     return ['_'.join(tokens[i:i+n]) for i in range(len(tokens)-n+1)]
-
-
-#     #Generate n-grams: unigram, bigram, trigram
-# for col in ["keyword", "text"]:
-#     df[f"{col}_unigram"] = df[col].map(lambda x: preprocess_data(x, exclude_stopword=False, stem=True))
-#     df[f"{col}_bigram"] = df[f"{col}_unigram"].map(lambda x: generate_ngrams(x, 2))
-#     df[f"{col}_trigram"] = df[f"{col}_unigram"].map(lambda x: generate_ngrams(x, 3))
-
-#     #Initialize your SVD feature generator
-# from SvdFeatureGenerator import SvdFeatureGenerator
-# svdGen = SvdFeatureGenerator()
-
-#     #Run the processing (generate .pkl files)
-# svdGen.process(df)
+# svdgenerator = SvdFeatureGenerator()
+# A = svdgenerator.read('train')
+# print(A)
