@@ -5,6 +5,7 @@ from itertools import chain
 from collections import Counter
 from sklearn.model_selection import StratifiedKFold, GroupKFold
 import xgboost as xgb
+from sklearn import svm
 from collections import Counter
 from CountFeatureGenerator import *
 from TfidfFeatureGenerator import *
@@ -12,30 +13,9 @@ from SvdFeatureGenerator import *
 from Word2VecFeatureGenerator import *
 from SentimentFeatureGenerator import *
 from score import *
-from xgboost import XGBClassifier
-from sklearn.model_selection import GridSearchCV
-from sklearn.utils.class_weight import compute_sample_weight
-from generateFeatures import *
-from sklearn.metrics import f1_score, make_scorer, confusion_matrix
-import pandas as pd
-from sklearn.model_selection import RandomizedSearchCV
-import cupy as cp
-
-
-params_xgb = {
-    'objective': 'binary:logistic',  # Binary classification
-    'eval_metric': 'logloss',        # Evaluation metric
-    'eta': 0.1,                      # Learning rate
-    'max_depth': 5,                  # Maximum depth of a tree
-    'min_child_weight': 1,           # Minimum sum of instance weight needed in a child
-    'subsample': 0.8,                # Subsample ratio of the training instances
-    'colsample_bytree': 0.8,         # Subsample ratio of columns when constructing each tree
-    'lambda': 1.0,                   # L2 regularization term on weights
-    'alpha': 0.0,                    # L1 regularization term on weights
-    'scale_pos_weight': 1,           # Balancing of positive and negative weights
-    'seed': 2025,                    # Random seed
-    'verbosity': 1                   # Verbosity of printing messages
-}
+import score
+import joblib
+from sklearn.metrics import confusion_matrix
 
 
 def build_data():
@@ -123,89 +103,69 @@ def build_test_data():
                    # pair id
     return data_x, test['id'].values, test['target']
 
-
 def train():
 
-    data_x, data_y, _, _ = build_data()
+    data_x, data_y, body_ids, target_stance = build_data()
+    print(data_x, data_y, body_ids, target_stance)
+    # read test data
     test_x, body_ids_test, true_y = build_test_data()
 
-    # Sample weights
-    sample_weights = compute_sample_weight(class_weight='balanced', y=data_y)
+    svm_FNC = svm.SVC(kernel='linear', probability=True)
+    bst = svm_FNC.fit(data_x, data_y)
 
-    # Parameter space for tuning
-    param_dist = {
-        'max_depth': [3, 4, 5],
-        'learning_rate': [0.01, 0.05, 0.1],
-        'n_estimators': [50, 100],
-        'subsample': [0.8, 1.0],
-        'colsample_bytree': [0.8, 1.0],
-        'reg_alpha': [0, 0.1],
-        'reg_lambda': [1, 1.5]
-    }
+    pred_y = bst.predict(test_x)
+    print(len(pred_y))
 
-    model = XGBClassifier(
-        objective='binary:logistic',
-        eval_metric='logloss',
-        random_state=2025,
-        n_jobs=-1,
-        tree_method='hist'  # CPU-efficient tree method
-    )
+    df_test = pd.DataFrame()
+    df_test['pred_y'] = pred_y
+    df_test['true_y'] = true_y
+    df_test = df_test.dropna()
 
-    search = RandomizedSearchCV(
-        estimator=model,
-        param_distributions=param_dist,
-        n_iter=10,
-        scoring=make_scorer(f1_score),
-        cv=3,
-        verbose=1,
-        random_state=2025
-    )
+    print(df_test['pred_y'].value_counts())
+    print(df_test['true_y'].value_counts())
 
-    # Train
-    search.fit(data_x, data_y, sample_weight=sample_weights)
+    print(score.report_score(df_test['true_y'], df_test['pred_y']))
 
-    # Report
-    print("✅ Best Parameters:", search.best_params_)
-    best_model = search.best_estimator_
-    best_model.save_model("xgb_model.json")
+    predicted = [LABELS[int(a)] for a in pred_y]
+    stances = target_stance
 
-    # Predict on test set
-    pred_prob_y = best_model.predict_proba(test_x)[:, 1]
-    pred_y = (pred_prob_y >= 0.5).astype(int)
+    df_output = pd.DataFrame()
+    df_output['id'] = body_ids_test
+    df_output['pred'] = pred_y
+    
+    df_output.to_csv('svm_pred_prob.csv', index=False)
 
-    # Evaluate
-    report_score(true_y, pred_y)
-
-    # Save results
-    pd.DataFrame({
-        'id': body_ids_test,
-        'pred': pred_y
-    }).to_csv("xgb_test_predictions.csv", index=False)
-
-    return best_model
 
 if __name__ == '__main__':
     train()
 
 
-# Best Parameters: {'subsample': 1.0, 'reg_lambda': 1.5, 'reg_alpha': 0.1, 'n_estimators': 100, 'max_depth': 4, 'learning_rate': 0.01, 'colsample_bytree': 1.0}
+#Name: count, dtype: int64
 # -------------------------------------------------
 # |               | not_disaster  |   disaster    |
 # -------------------------------------------------
-# | not_disaster  |      406      |      456      |
+# | not_disaster  |      110      |      72       |
 # -------------------------------------------------
-# |   disaster    |      182      |      466      |
+# |   disaster    |      86       |      24       |
 # -------------------------------------------------
 
 # Classification Report:
 #                precision    recall  f1-score   support
 
-# not_disaster       0.69      0.47      0.56       862
-#     disaster       0.51      0.72      0.59       648
+# not_disaster       0.56      0.60      0.58       182
+#     disaster       0.25      0.22      0.23       110
 
-#     accuracy                           0.58      1510
-#    macro avg       0.60      0.60      0.58      1510
-# weighted avg       0.61      0.58      0.57      1510
+#     accuracy                           0.46       292
+#    macro avg       0.41      0.41      0.41       292
+# weighted avg       0.44      0.46      0.45       292
 
 
-#  Binary F1 Score (target: 1): 0.5936
+#  Binary F1 Score (target: 1): 0.2330
+# 0.23300970873786409
+
+
+
+
+
+
+
