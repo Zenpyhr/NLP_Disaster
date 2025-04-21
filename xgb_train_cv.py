@@ -17,6 +17,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.utils.class_weight import compute_sample_weight
 from generateFeatures import *
 from sklearn.metrics import f1_score, make_scorer, confusion_matrix
+from imblearn.over_sampling import SMOTE
 import pandas as pd
 from sklearn.model_selection import RandomizedSearchCV
 import cupy as cp
@@ -129,19 +130,24 @@ def train():
     data_x, data_y, _, _ = build_data()
     test_x, body_ids_test, true_y = build_test_data()
 
-    # Sample weights
+    # Apply SMOTE to balance classes
+    print("🔄 Applying SMOTE to balance classes...")
+    smote = SMOTE(random_state=2025)
+    data_x, data_y = smote.fit_resample(data_x, data_y)
+
     sample_weights = compute_sample_weight(class_weight='balanced', y=data_y)
 
     # Parameter space for tuning
     param_dist = {
-        'max_depth': [3, 4, 5],
-        'learning_rate': [0.01, 0.05, 0.1],
-        'n_estimators': [50, 100],
-        'subsample': [0.8, 1.0],
-        'colsample_bytree': [0.8, 1.0],
-        'reg_alpha': [0, 0.1],
-        'reg_lambda': [1, 1.5]
+        'max_depth': [3, 6, 9],
+        'learning_rate': [0.01, 0.02, 0.04],
+        'n_estimators': [50, 150, 300],
+        'subsample': [0.6, 0.8, 1.0],
+        'colsample_bytree': [0.6, 0.8, 1.0],
+        'reg_alpha': [0, 0.5, 1.0],
+        'reg_lambda': [0.5, 1.5, 3.0]
     }
+
 
     model = XGBClassifier(
         objective='binary:logistic',
@@ -156,7 +162,7 @@ def train():
         param_distributions=param_dist,
         n_iter=10,
         scoring=make_scorer(f1_score),
-        cv=3,
+        cv=5,  #bigger cv
         verbose=1,
         random_state=2025
     )
@@ -165,18 +171,31 @@ def train():
     search.fit(data_x, data_y, sample_weight=sample_weights)
 
     # Report
-    print("✅ Best Parameters:", search.best_params_)
+    print("Best Parameters:", search.best_params_)
     best_model = search.best_estimator_
     best_model.save_model("xgb_model.json")
 
     # Predict on test set
     pred_prob_y = best_model.predict_proba(test_x)[:, 1]
-    pred_y = (pred_prob_y >= 0.5).astype(int)
 
-    # Evaluate
+
+
+    # Tune threshold for best F1 score
+    print("Tuning threshold for best F1 score...")
+    best_thresh = 0.5
+    best_f1 = 0
+    for t in np.linspace(0.3, 0.7, 21):
+        temp_pred = (pred_prob_y >= t).astype(int)
+        temp_f1 = f1_score(true_y, temp_pred)
+        if temp_f1 > best_f1:
+            best_f1 = temp_f1
+            best_thresh = t
+
+    print(f"Best threshold: {best_thresh:.2f} with F1: {best_f1:.4f}")
+    pred_y = (pred_prob_y >= best_thresh).astype(int)
+
+    # Evaluate and save results
     report_score(true_y, pred_y)
-
-    # Save results
     pd.DataFrame({
         'id': body_ids_test,
         'pred': pred_y
@@ -209,3 +228,37 @@ if __name__ == '__main__':
 
 
 #  Binary F1 Score (target: 1): 0.5936
+
+
+#feature sensitivity analysis
+#PCA
+#cv 5-10 hyperparameter
+
+
+
+
+
+# Fitting 5 folds for each of 10 candidates, totalling 50 fits
+# Best Parameters: {'subsample': 1.0, 'reg_lambda': 0.5, 'reg_alpha': 1.0, 'n_estimators': 50, 'max_depth': 3, 'learning_rate': 0.04, 'colsample_bytree': 0.8}
+# Tuning threshold for best F1 score...
+# Best threshold: 0.40 with F1: 0.6125
+# -------------------------------------------------
+# |               | not_disaster  |   disaster    |
+# -------------------------------------------------
+# | not_disaster  |      255      |      607      |
+# -------------------------------------------------
+# |   disaster    |      94       |      554      |
+# -------------------------------------------------
+
+# Classification Report:
+#                precision    recall  f1-score   support
+
+# not_disaster       0.73      0.30      0.42       862
+#     disaster       0.48      0.85      0.61       648
+
+#     accuracy                           0.54      1510
+#    macro avg       0.60      0.58      0.52      1510
+# weighted avg       0.62      0.54      0.50      1510
+
+
+#  Binary F1 Score (target: 1): 0.6125

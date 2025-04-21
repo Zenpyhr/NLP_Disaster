@@ -5,6 +5,7 @@ from sklearn.metrics import f1_score
 from score import report_score  # make sure this is implemented
 import pandas as pd
 import pickle
+import joblib 
 from CountFeatureGenerator import *
 from TfidfFeatureGenerator import *
 from SvdFeatureGenerator import *
@@ -99,4 +100,80 @@ def build_test_data():
     return data_x, test['id'].values, test['target']
 
 def train():
-    
+    data_x, data_y, body_ids, target_stance = build_data()
+    test_x, body_ids_test, true_y = build_test_data()
+
+    sample_weights = compute_sample_weight(class_weight='balanced', y=data_y)
+
+    # Define hyperparameter search space
+    param_dist = {
+        'n_estimators': [100,300],
+        'max_depth': [10,30],
+        'min_samples_split': [2, 5],
+        'min_samples_leaf': [1, 2],
+        'bootstrap': [True]
+    }
+
+    # Initialize the model
+    model = RandomForestClassifier(random_state=2025)
+
+    # Hyperparameter search
+    search = RandomizedSearchCV(
+        estimator=model,
+        param_distributions=param_dist,
+        n_iter=3,
+        scoring='f1',
+        cv=3,
+        verbose=1,
+        random_state=2025,
+        n_jobs=-1
+    )
+
+    # Train the model
+    search.fit(data_x, data_y, sample_weight=sample_weights)
+
+    print("\n Best Parameters:", search.best_params_)
+    best_model = search.best_estimator_
+    joblib.dump(best_model, "random_forest_model.pkl")
+
+    # Predict on test set
+    pred_y = best_model.predict(test_x)
+
+    # Report performance
+    report_score(true_y, pred_y)
+
+    # Save predictions
+    df_output = pd.DataFrame({
+        'id': body_ids_test,
+        'pred': pred_y
+    })
+    df_output.to_csv("random_forest_predictions.csv", index=False)
+
+    return best_model
+
+
+if __name__ == '__main__':
+    train()
+
+
+# Best Parameters: {'n_estimators': 300, 'min_samples_split': 5, 'min_samples_leaf': 2, 'max_depth': 10, 'bootstrap': True}
+# -------------------------------------------------
+# |               | not_disaster  |   disaster    |
+# -------------------------------------------------
+# | not_disaster  |      573      |      289      |
+# -------------------------------------------------
+# |   disaster    |      371      |      277      |
+# -------------------------------------------------
+
+# Classification Report:
+#                precision    recall  f1-score   support
+
+# not_disaster       0.61      0.66      0.63       862
+#     disaster       0.49      0.43      0.46       648
+
+#     accuracy                           0.56      1510
+#    macro avg       0.55      0.55      0.55      1510
+# weighted avg       0.56      0.56      0.56      1510
+
+
+#  Binary F1 Score (target: 1): 0.4563
