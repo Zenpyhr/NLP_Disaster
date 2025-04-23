@@ -207,34 +207,10 @@ if __name__ == '__main__':
     train()
 
 
-# Best Parameters: {'subsample': 1.0, 'reg_lambda': 1.5, 'reg_alpha': 0.1, 'n_estimators': 100, 'max_depth': 4, 'learning_rate': 0.01, 'colsample_bytree': 1.0}
-# -------------------------------------------------
-# |               | not_disaster  |   disaster    |
-# -------------------------------------------------
-# | not_disaster  |      406      |      456      |
-# -------------------------------------------------
-# |   disaster    |      182      |      466      |
-# -------------------------------------------------
-
-# Classification Report:
-#                precision    recall  f1-score   support
-
-# not_disaster       0.69      0.47      0.56       862
-#     disaster       0.51      0.72      0.59       648
-
-#     accuracy                           0.58      1510
-#    macro avg       0.60      0.60      0.58      1510
-# weighted avg       0.61      0.58      0.57      1510
-
-
-#  Binary F1 Score (target: 1): 0.5936
-
 
 #feature sensitivity analysis
 #PCA
 #cv 5-10 hyperparameter
-
-
 
 
 
