@@ -1,7 +1,7 @@
-# NLP_Disaster 🚨🧠  
+# NLP_Disaster
 A machine learning pipeline for classifying real disaster tweets from non-disaster tweets — built for the Kaggle competition: [Natural Language Processing with Disaster Tweets](https://www.kaggle.com/competitions/nlp-getting-started).
 
-## 🔍 Project Overview
+## Project Overview
 This project tackles a binary classification task using Twitter data. The goal is to predict whether a given tweet is about a real disaster (label = 1) or not (label = 0).
 
 We built an end-to-end pipeline that covers:
@@ -10,7 +10,6 @@ We built an end-to-end pipeline that covers:
 - Training with XGBoost and SVM classifiers
 - Evaluation using F1-score, confusion matrix, and classification reports
 - Hyperparameter tuning with `RandomizedSearchCV`
-- GPU support for XGBoost training
 
 ---
 
@@ -18,23 +17,25 @@ We built an end-to-end pipeline that covers:
 ```
 NLP_Disaster/
 │
-├── data/                    # Contains raw and processed CSV files (e.g. train.csv)
+├── data/                   # Contains raw and processed CSV files (e.g. train.csv
+  ├── train.csv               # Kaggle dataset file (manually added to /data/)
+  ├── test.csv                # Kaggle dataset file (optional, for final predictions)
+
 ├── helpers.py              # Utility functions like cosine similarity
-├── generateFeatures.py     # Script to generate features and save as .pkl
-├── xgb_train_cv.py         # Training script with XGBoost + CV + tuning + GPU support
-├── svm_train.py            # (Optional) Training script using SVM
-│
+├── score.py                # Contains scoring utilities like report_score for future evaluation
+
 ├── FeatureGenerator.py     # Base class for feature generators
 ├── CountFeatureGenerator.py
 ├── TfidfFeatureGenerator.py
 ├── SvdFeatureGenerator.py
 ├── Word2VecFeatureGenerator.py
 ├── SentimentFeatureGenerator.py
-├── score.py                # Contains scoring utilities like report_score
-│
-├── train.csv               # Kaggle dataset file (manually added to /data/)
-├── test.csv                # Kaggle dataset file (optional, for final predictions)
-│
+
+├── generateFeatures.py     # Script to generate features and save as .pkl
+
+├── xgb_train_cv.py         # Training script with XGBoost + CV + tuning + GPU support
+├── svm_train.py            # (Optional) Training script using SVM
+
 ├── xgb_model.json          # Saved trained XGBoost model
 ├── xgb_test_predictions.csv  # Output predictions
 │
@@ -43,7 +44,7 @@ NLP_Disaster/
 
 ---
 
-## 🛠️ How to Use
+## How to Use
 
 ### 1. Install Requirements
 ```bash
@@ -80,7 +81,7 @@ Use the saved model `xgb_model.json` and re-run prediction logic with the test s
 
 ---
 
-## 📊 Evaluation
+## Evaluation
 We use `report_score()` for evaluation, which prints:
 - Confusion Matrix
 - Classification Report
@@ -88,18 +89,18 @@ We use `report_score()` for evaluation, which prints:
 
 ---
 
-## 🧪 Models
+## Models
 - `XGBoost` (primary)
 - `SVM` (experimental, in `svm_train.py`)
 
 ---
 
-## 💡 Future Improvements
+## Future Improvements
 - Expand test set prediction and submission generation
 - Add ensemble methods (e.g., stacking)
 - Explore transformer-based models (BERT, RoBERTa)
 
 ---
 
-## 📜 License
+## License
 This project is under the MIT License.
